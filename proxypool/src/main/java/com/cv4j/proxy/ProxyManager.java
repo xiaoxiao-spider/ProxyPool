@@ -39,8 +39,15 @@ public class ProxyManager {
      * 抓取代理，成功的代理存放到ProxyPool中
      */
     public void start() {
-
+        /// RxJava 2在这两种源之间引入了明显的区别-背压感知源现在使用专用类Flowable表示。
+        // Obserable可观察到的源不支持背压。因此，我们应该将其用于仅消耗而无法影响的资源。
+        // 另外，如果我们要处理大量元素，则取决于Observable的类型，可能会出现两种与背压有关的情况。
+        // 如果使用所谓的“冷可观察 cold observable”，事件会延迟发送，因此我们可以避免观察者溢出。
+        //但是，当使用“热可观察 hot observable”对象时，即使消费者无法跟上，它也会继续发出事件
         Flowable.fromIterable(ProxyPool.proxyMap.keySet())
+                // 在相应的操作符上调用Flowable的parallel()就会返回ParallelFlowable。
+                // 举例： ParallelFlowable parallelFlowable = Flowable.range(1,100).parallel();
+                // ParallelFlowable的from()方法，通过Publisher并以循环的方式在多个“轨道”（CPU数）上消费它。
                 .parallel(ProxyPool.proxyMap.size())
                 .map(new Function<String, List<Proxy>>() {
                     @Override
@@ -65,6 +72,7 @@ public class ProxyManager {
                                     .filter(new Predicate<Proxy>() {
                                         @Override
                                         public boolean test(Proxy proxy) {
+                                            // 测试抓取的代理是否可用
                                             HttpHost httpHost = new HttpHost(proxy.getIp(), proxy.getPort(), proxy.getType());
                                             boolean result = HttpManager.get().checkProxy(httpHost);
                                             if(result) log.info("checkProxy " + proxy.getProxyStr() +", "+result);
@@ -78,7 +86,11 @@ public class ProxyManager {
                         return Flowable.empty();
                     }
                 })
+				// ParallelFlowable遵循与Flowable相同的异步原理，因此parallel()本身不引入顺序源的异步消耗，只准备并行流。
+                // 但是可以通过runOn(Scheduler)操作符定义异步。
+                // 这一点跟Flowable很大不同，Flowable是使用subscribeOn、observeOn操作符。
                 .runOn(Schedulers.io())
+                // 在最后，如果已经使用了必要的并行操作，您可以通过ParallelFlowable.sequential()操作符返回到顺序流。
                 .sequential()
                 .subscribe(new Consumer<Proxy>() {
                     @Override

@@ -30,12 +30,15 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompileOnly 'org.projectlombok:lombok:1.18.10'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.10'
 
     compile 'ch.qos.logback:logback-classic:1.1.7'
     compile 'ch.qos.logback:logback-core:1.1.7'
     compile 'ch.qos.logback:logback-access:1.1.7'
-    compile 'org.projectlombok:lombok:1.16.18'
-
+    /*compile 'org.projectlombok:lombok:1.16.18'*/
+    compileOnly 'org.projectlombok:lombok:1.18.10'
+    annotationProcessor 'org.projectlombok:lombok:1.18.10'
     compile 'org.springframework.boot:spring-boot-starter-web:1.5.8.RELEASE'
     compile 'org.springframework.boot:spring-boot-starter-data-mongodb:+'
     compile 'org.springframework.boot:spring-boot-starter-aop:1.5.9.RELEASE'
@@ -50,4 +53,5 @@ dependencies {
     compile project(':proxypool')
     compile 'tony-common:tony-common-utils:1.2.6'
     compile "org.apache.httpcomponents:httpclient:4.5.2"
+
 }
